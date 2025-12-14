@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bingo Web</title>
+  <title>Bingo Web GastroBar Burriana</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -21,21 +21,35 @@
       padding: 1rem;
     }
     .current-number {
-      font-size: 8vw;
-      margin: 1rem 0;
+      font-size: clamp(3rem, 10vw, 7rem);
+      margin: 0.5rem 0 1rem 0;
       font-weight: bold;
       color: #00ffcc;
     }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
     .controls button {
-      font-size: 1.2rem;
-      margin: 0.5rem;
-      padding: 0.7rem 1.2rem;
+      font-size: 1rem;
+      padding: 0.6rem 0.9rem;
       border: none;
       border-radius: 8px;
       cursor: pointer;
     }
     .controls button:hover {
       opacity: 0.85;
+    }
+    .btn-start {
+        background: #ff00f2; 
+        color: #fff;
+        font-size: 1.4rem;
+        padding: 0.9rem 2rem;
+        margin: 0.8rem 0;
+        border-radius: 12px;
     }
     .btn-primary { background: #007bff; color: #fff; }
     .btn-success { background: #28a745; color: #fff; }
@@ -44,9 +58,15 @@
 
     .numbers {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
-      gap: 8px;
-      margin-top: 1rem;
+      grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
+      gap: 6px;
+      margin-top: 0.5rem;
+    }
+    .number {
+      padding: 0.3rem 0;
+      border-radius: 5px;
+      background: #333;
+      font-size: 0.9rem;
     }
     .number {
       padding: 0.5rem;
@@ -82,17 +102,24 @@
         <option value="75">75</option>
         <option value="90" selected>90</option>
       </select>
-      <button class="btn-primary" onclick="startBingo()">Empezar</button>
+      <label style="font-size:0.9rem">⏱️ Intervalo (seg):</label>
+      <input type="number" id="intervalInput" value="4" min="1" style="width:60px;font-size:1rem;">
+    </div>
+
+    <div>
+        <button class="btn-start" onclick="startBingo()">
+            Empezar Bingo
+          </button>           
+    </div>
+
+    <div class="controls">
+      <button class="btn-success" onclick="nextBall()">Siguiente</button>
+      <button class="btn-primary" onclick="startAuto()">Auto</button>
+      <button class="btn-warning" onclick="pauseAuto()">Pausa</button>
+      <button class="btn-danger" onclick="resetBingo()">Reset</button>
     </div>
 
     <div class="current-number" id="currentNumber">--</div>
-
-    <div class="controls">
-      <button class="btn-success" onclick="nextBall()">Siguiente bola</button>
-      <button class="btn-primary" onclick="startAuto()">Automático</button>
-      <button class="btn-warning" onclick="pauseAuto()">Pausa</button>
-      <button class="btn-danger" onclick="resetBingo()">Reiniciar</button>
-    </div>
 
     <div class="numbers" id="numbers"></div>
   </div>
@@ -102,6 +129,25 @@
     let availableNumbers = [];
     let drawnNumbers = [];
     let autoInterval = null;
+    let voice = null;
+
+    function loadVoice() {
+      const voices = speechSynthesis.getVoices();
+      voice = voices.find(v => v.lang.startsWith('es')) || voices[1];
+    }
+
+    speechSynthesis.onvoiceschanged = loadVoice;
+
+    function speakNumber(number) {
+      if (!('speechSynthesis' in window)) return;
+      const utterance = new SpeechSynthesisUtterance(`${number}`);
+      if (voice) utterance.voice = voice;
+      utterance.lang = 'es-ES';
+      utterance.rate = 0.75;
+      utterance.pitch = 1.2;
+      speechSynthesis.cancel();
+      speechSynthesis.speak(utterance);
+    }
 
     function startBingo() {
       max = parseInt(document.getElementById('maxNumbers').value);
@@ -117,11 +163,13 @@
       drawnNumbers.push(number);
       document.getElementById('currentNumber').innerText = number;
       updateDrawn(number);
+      speakNumber(number);
     }
 
     function startAuto() {
       if (autoInterval) return;
-      autoInterval = setInterval(nextBall, 7000);
+      const seconds = parseInt(document.getElementById('intervalInput').value) || 7;
+      autoInterval = setInterval(nextBall, seconds * 1000);
     }
 
     function pauseAuto() {
