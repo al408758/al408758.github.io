@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bingo Web</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #fff;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      padding: 1rem;
+      background: #222;
+    }
+    .container {
+      padding: 1rem;
+    }
+    .current-number {
+      font-size: 8vw;
+      margin: 1rem 0;
+      font-weight: bold;
+      color: #00ffcc;
+    }
+    .controls button {
+      font-size: 1.2rem;
+      margin: 0.5rem;
+      padding: 0.7rem 1.2rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .controls button:hover {
+      opacity: 0.85;
+    }
+    .btn-primary { background: #007bff; color: #fff; }
+    .btn-success { background: #28a745; color: #fff; }
+    .btn-warning { background: #ffc107; color: #000; }
+    .btn-danger { background: #dc3545; color: #fff; }
+
+    .numbers {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+      gap: 8px;
+      margin-top: 1rem;
+    }
+    .number {
+      padding: 0.5rem;
+      border-radius: 6px;
+      background: #333;
+      font-size: 1.2rem;
+    }
+    .number.drawn {
+      background: #00ffcc;
+      color: #000;
+      font-weight: bold;
+    }
+    .setup {
+      margin: 1rem 0;
+    }
+    select {
+      font-size: 1rem;
+      padding: 0.4rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Bingo</h1>
+  </header>
+
+  <div class="container">
+    <div class="setup">
+      <label for="maxNumbers">Número de bolas: </label>
+      <select id="maxNumbers">
+        <option value="30">30</option>
+        <option value="60">60</option>
+        <option value="75">75</option>
+        <option value="90" selected>90</option>
+      </select>
+      <button class="btn-primary" onclick="startBingo()">Empezar</button>
+    </div>
+
+    <div class="current-number" id="currentNumber">--</div>
+
+    <div class="controls">
+      <button class="btn-success" onclick="nextBall()">Siguiente bola</button>
+      <button class="btn-primary" onclick="startAuto()">Automático</button>
+      <button class="btn-warning" onclick="pauseAuto()">Pausa</button>
+      <button class="btn-danger" onclick="resetBingo()">Reiniciar</button>
+    </div>
+
+    <div class="numbers" id="numbers"></div>
+  </div>
+
+  <script>
+    let max = 90;
+    let availableNumbers = [];
+    let drawnNumbers = [];
+    let autoInterval = null;
+
+    function startBingo() {
+      max = parseInt(document.getElementById('maxNumbers').value);
+      resetBingo();
+      availableNumbers = Array.from({ length: max }, (_, i) => i + 1);
+      renderNumbers();
+    }
+
+    function nextBall() {
+      if (availableNumbers.length === 0) return;
+      const index = Math.floor(Math.random() * availableNumbers.length);
+      const number = availableNumbers.splice(index, 1)[0];
+      drawnNumbers.push(number);
+      document.getElementById('currentNumber').innerText = number;
+      updateDrawn(number);
+    }
+
+    function startAuto() {
+      if (autoInterval) return;
+      autoInterval = setInterval(nextBall, 7000);
+    }
+
+    function pauseAuto() {
+      clearInterval(autoInterval);
+      autoInterval = null;
+    }
+
+    function resetBingo() {
+      pauseAuto();
+      availableNumbers = [];
+      drawnNumbers = [];
+      document.getElementById('currentNumber').innerText = '--';
+      document.getElementById('numbers').innerHTML = '';
+    }
+
+    function renderNumbers() {
+      const container = document.getElementById('numbers');
+      container.innerHTML = '';
+      for (let i = 1; i <= max; i++) {
+        const div = document.createElement('div');
+        div.className = 'number';
+        div.id = 'num-' + i;
+        div.innerText = i;
+        container.appendChild(div);
+      }
+    }
+
+    function updateDrawn(number) {
+      const el = document.getElementById('num-' + number);
+      if (el) el.classList.add('drawn');
+    }
+  </script>
+</body>
+</html>
