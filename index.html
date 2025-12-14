@@ -160,7 +160,8 @@
 
     function loadVoice() {
       const voices = speechSynthesis.getVoices();
-      voice = voices.find(v => v.lang.startsWith('es')) || voices[1];
+      voice =  voices[1];
+      /* Voces españolas: 0,1,2,7,8 */
     }
 
     speechSynthesis.onvoiceschanged = loadVoice;
