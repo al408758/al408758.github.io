@@ -51,10 +51,11 @@
         margin: 0.8rem 0;
         border-radius: 12px;
     }
-    .btn-primary { background: #007bff; color: #fff; }
-    .btn-success { background: #28a745; color: #fff; }
+    .btn-primary { background: #007bff; color: #fff;}
+    .btn-success { background: #28a745; color: #fff;  margin-left: 23rem;}
     .btn-warning { background: #ffc107; color: #000; }
-    .btn-danger { background: #dc3545; color: #fff; }
+    .btn-danger { background: #dc3545; color: #fff; margin-left: 17rem;}
+
 
     .numbers {
       display: grid;
@@ -86,6 +87,22 @@
       font-size: 1rem;
       padding: 0.4rem;
     }
+
+    #progressContainer {
+  width: 100%;
+  height: 6px;
+  background: #333;
+  overflow: hidden;
+  display: none;
+    }
+
+    #progressBar {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, #00ffcc, #00aa88);
+    transition: width 0.1s linear;
+    }
+
   </style>
 </head>
 <body>
@@ -102,8 +119,8 @@
         <option value="75">75</option>
         <option value="90" selected>90</option>
       </select>
-      <label style="font-size:0.9rem">⏱️ Intervalo (seg):</label>
       <input type="number" id="intervalInput" value="4" min="1" style="width:60px;font-size:1rem;">
+      <label style="font-size:0.9rem">⏱️ Intervalo(seg)</label>
     </div>
 
     <div>
@@ -113,11 +130,15 @@
     </div>
 
     <div class="controls">
-      <button class="btn-success" onclick="nextBall()">Siguiente</button>
-      <button class="btn-primary" onclick="startAuto()">Auto</button>
+      <button class="btn-success" onclick="nextBall()">Siguiente Bola</button>
+      <button class="btn-primary" onclick="startAuto()">Automático</button>
       <button class="btn-warning" onclick="pauseAuto()">Pausa</button>
-      <button class="btn-danger" onclick="resetBingo()">Reset</button>
+      <button class="btn-danger" onclick="resetBingo()">Reiniciar</button>
     </div>
+
+    <div id="progressContainer">
+        <div id="progressBar"></div>
+    </div>      
 
     <div class="current-number" id="currentNumber">--</div>
 
@@ -130,6 +151,12 @@
     let drawnNumbers = [];
     let autoInterval = null;
     let voice = null;
+    let bingoStarted = false;
+    let progressInterval = null;
+    let progressDuration = 0;
+    let progressStartTime = 0;
+
+
 
     function loadVoice() {
       const voices = speechSynthesis.getVoices();
@@ -150,10 +177,17 @@
     }
 
     function startBingo() {
-      max = parseInt(document.getElementById('maxNumbers').value);
-      resetBingo();
-      availableNumbers = Array.from({ length: max }, (_, i) => i + 1);
-      renderNumbers();
+    if (bingoStarted) return;
+
+    bingoStarted = true;
+    max = parseInt(document.getElementById('maxNumbers').value);
+    resetBingo(false);
+
+    availableNumbers = Array.from({ length: max }, (_, i) => i + 1);
+    renderNumbers();
+
+    document.querySelector('.btn-start').disabled = true;
+    document.querySelector('.btn-start').style.opacity = '0.5';
     }
 
     function nextBall() {
@@ -167,22 +201,47 @@
     }
 
     function startAuto() {
-      if (autoInterval) return;
-      const seconds = parseInt(document.getElementById('intervalInput').value) || 7;
-      autoInterval = setInterval(nextBall, seconds * 1000);
+        if (autoInterval) return;
+
+        const seconds = parseInt(document.getElementById('intervalInput').value) || 7;
+
+        autoInterval = setInterval(() => {
+            nextBall();
+            progressStartTime = Date.now();
+        }, seconds * 1000);
+
+        startProgressBar(seconds);
+
+        document.querySelector('.btn-success').disabled = true;
+        document.querySelector('.btn-success').style.opacity = '0.5';
     }
 
     function pauseAuto() {
-      clearInterval(autoInterval);
-      autoInterval = null;
+        clearInterval(autoInterval);
+        autoInterval = null;
+        stopProgressBar();
+
+        const btnNext = document.querySelector('.btn-success');
+        btnNext.disabled = false;
+        btnNext.style.opacity = '1';
     }
 
-    function resetBingo() {
-      pauseAuto();
-      availableNumbers = [];
-      drawnNumbers = [];
-      document.getElementById('currentNumber').innerText = '--';
-      document.getElementById('numbers').innerHTML = '';
+
+
+    function resetBingo(resetStarted = true) {
+        pauseAuto();
+        stopProgressBar();
+        availableNumbers = [];
+        drawnNumbers = [];
+        document.getElementById('currentNumber').innerText = '--';
+        document.getElementById('numbers').innerHTML = '';
+
+        if (resetStarted) {
+            bingoStarted = false;
+            const btnStart = document.querySelector('.btn-start');
+            btnStart.disabled = false;
+            btnStart.style.opacity = '1';
+        }
     }
 
     function renderNumbers() {
@@ -201,6 +260,36 @@
       const el = document.getElementById('num-' + number);
       if (el) el.classList.add('drawn');
     }
+
+    function startProgressBar(seconds) {
+        const container = document.getElementById('progressContainer');
+        const bar = document.getElementById('progressBar');
+
+        container.style.display = 'block';
+        bar.style.width = '100%';
+
+        progressDuration = seconds * 1000;
+        progressStartTime = Date.now();
+
+        clearInterval(progressInterval);
+        progressInterval = setInterval(() => {
+            const elapsed = Date.now() - progressStartTime;
+            const remaining = Math.max(0, progressDuration - elapsed);
+            const percent = (remaining / progressDuration) * 100;
+            bar.style.width = percent + '%';
+
+            if (remaining <= 0) {
+            progressStartTime = Date.now();
+            bar.style.width = '100%';
+            }
+        }, 100);
+    }
+
+    function stopProgressBar() {
+        document.getElementById('progressContainer').style.display = 'none';
+        clearInterval(progressInterval);
+    }
+
   </script>
 </body>
 </html>
